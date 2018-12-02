@@ -82,14 +82,14 @@ export abstract class Program implements WebGLProgram {
         attr.buffer.setStatic(array, dimension);
     }
 
-    setUniform(name: string, matrix?: Float32List) {
+    setUniform(name: string, value: number|Float32List) {
         if(!this.linked) this.link();
         let unif = this.uniforms.find(u=>u.name == name);
         if(!unif){
             unif = new Uniform(this, name);
             this.uniforms.push(unif);
         }
-        unif.matrix = matrix;
+        unif.value = value;
     }
 }
 
@@ -130,9 +130,54 @@ export class Uniform {
         this.location = location;
     }
     
-    matrix?: Float32List;
+    private _value?: number|Float32List;
+    private changed: boolean = false;
+    get value(): number|Float32List{return this._value || 0;}
+    set value(v: number|Float32List){
+        this.changed = true;
+        this._value = v;
+    }
+    
     draw(){
-        if(!this.matrix) return;
-        this.context.uniformMatrix4fv(this.location, false, this.matrix);
+        if(!this.changed) return;
+        this.changed = false;
+        this.sendData(this.value);
+    }
+
+    private sendData(v: number|Float32List){
+        if([Array, Float32Array, Float64Array].find(c=>v instanceof c)){
+            let value = v as number[];
+            switch(value.length){
+                case 1:
+                this.context.uniform1fv(this.location, value);
+                return;
+
+                case 2:
+                this.context.uniform2fv(this.location, value);
+                return;
+                
+                case 3:
+                this.context.uniform3fv(this.location, value);
+                return;
+                
+                case 4:
+                this.context.uniformMatrix2fv(this.location, false, value);
+                return;
+                
+                case 9:
+                this.context.uniformMatrix3fv(this.location, false, value);
+                return;
+                
+                case 16:
+                this.context.uniformMatrix4fv(this.location, false, value);
+                return;
+                
+                default:
+                this.context.uniform1fv(this.location, value);
+                return;
+            }
+        }
+        
+        this.context.uniform1f(this.location, v as number);
     }
 }

@@ -31,8 +31,8 @@ async function start() {
     const mvMat = mat4.create();
     mat4.translate(mvMat, mvMat, [0.0, 0.0, -6.0]);
 
-    program.setUniform('uPMatrix', new Float32Array(pMat));
-    program.setUniform('uMVMatrix', new Float32Array(mvMat));
+    program.setUniform('uPMatrix', pMat);
+    program.setUniform('uMVMatrix', mvMat);
     
     let vertices = [
         1.0,  1.0,
@@ -49,5 +49,9 @@ async function start() {
     ];
     program.setAttribute('aVertexColor', new Float32Array(colors), 4);
 
-    gl.draw();
+    while(true){
+        program.setUniform('time', Date.now() % 3000 / 3000);
+        await new Promise(res=>requestAnimationFrame(res));
+        gl.draw();
+    }
 }
