@@ -27,8 +27,8 @@ export abstract class Context extends ContextBase{
         this.programs.forEach(program=>program.draw());
     }
     
-    addProgram(){
-        let program = Program.create(this);
+    addProgram(vertexCount: number){
+        let program = Program.create(this, vertexCount);
         this.programs.push(program);
         return program;
     }

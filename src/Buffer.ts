@@ -7,7 +7,23 @@ enum BufferType {
 
 enum DataType {
     'float' = ctx.FLOAT,
+    'int' = ctx.INT,
 }
+
+const DataTypeTable:  {[className: string]: DataType} = {
+    Uint8ClampedArray: DataType.int,
+    Uint8Array: DataType.int,
+    Uint16Array: DataType.int,
+    Uint32Array: DataType.int,
+    Int8Array: DataType.int,
+    Int16Array: DataType.int,
+    Int32Array: DataType.int,
+    Float32Array: DataType.float,
+    Float64Array: DataType.float,
+    DataView: DataType.float,
+    ArrayBuffer: DataType.float,
+    Array: DataType.float
+};
 
 enum BufferParameter {
     'size' = ctx.BUFFER_SIZE,
@@ -31,10 +47,12 @@ abstract class BufferBase implements WebGLBuffer {
     readonly bufferType!: BufferType;
     
     get size(): number {
+        this.bind();
         return this.context.getBufferParameter(this.bufferType, BufferParameter.size);
     }
     
     get usage(): BufferUsage {
+        this.bind();
         return this.context.getBufferParameter(this.bufferType, BufferParameter.usage);
     }
 
@@ -43,14 +61,23 @@ abstract class BufferBase implements WebGLBuffer {
     }
 
     private _dimension: number = 0;
-    private _dateType: DataType = 0;
+    private _dataType: DataType = 0;
+    private _length: number = 0;
+    get length(){return this._length;}
+
     get dimension(): number{return this._dimension || 0;}
-    get dataType(): DataType{return this._dateType || 0;}
-    private setData(usage: BufferUsage, array: ArrayBuffer|ArrayBufferView, dimension: number){
+    get dataType(): DataType{return this._dataType || 0;}
+    private setData(
+        usage: BufferUsage,
+        array: ArrayBuffer|ArrayBufferView,
+        dimension: number,
+        dataType?: typeof Object
+    ){
         this.bind();
         this.context.bufferData(this.bufferType, array, usage);
         this._dimension = dimension;
-        this._dateType = DataType.float;
+        this._dataType = DataTypeTable[(dataType || array.constructor).name];
+        this._length = array.byteLength;
     }
     
     setStatic(array: ArrayBuffer|ArrayBufferView, dimension: number){

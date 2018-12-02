@@ -12,21 +12,21 @@ enum ProgramParameter {
 }
 
 export abstract class Program implements WebGLProgram {
-    static create(ctx: WebGLRenderingContext): Program{
+    static create(ctx: WebGLRenderingContext, vertexCount: number): Program{
         let program = ctx.createProgram() as any;
         if(!program) throw new Error("Error Occured in Creating Program.");
         program.context = ctx;
-        program.element = ElementBuffer.create(ctx);
         program.shaders = [];
         program.attributes = [];
         program.uniforms = [];
+        program.vertexCount = vertexCount;
         return program;
     }
     readonly context!: WebGLRenderingContext;
-    readonly element!: ElementBuffer;
     readonly shaders!: (VertexShader|FragmentShader)[];
     readonly attributes!: Attribute[];
     readonly uniforms!: Uniform[];
+    readonly vertexCount!: number;
 
     get deleted(): boolean {
         return this.context.getProgramParameter(this, ProgramParameter.deleteStatus);
@@ -58,8 +58,16 @@ export abstract class Program implements WebGLProgram {
         this.context.useProgram(this);
         for(let uniform of this.uniforms) uniform.draw();
         
-        this.context.drawArrays(this.context.TRIANGLE_STRIP, 0, 4);
-        //this.context.drawElements(this.context.TRIANGLES, 3, this.context.UNSIGNED_SHORT, 0);
+        if(this.element){
+            this.context.drawElements(
+                this.context.TRIANGLES,
+                this.vertexCount,
+                this.context.UNSIGNED_SHORT,
+                0
+            );
+        }else{
+            this.context.drawArrays(this.context.TRIANGLE_STRIP, 0, this.vertexCount);
+        }
     }
     
     addVertexShader(src: string){
@@ -90,6 +98,12 @@ export abstract class Program implements WebGLProgram {
             this.uniforms.push(unif);
         }
         unif.value = value;
+    }
+
+    private element?: ElementBuffer;
+    setElement(array: Uint8Array|Uint16Array|Uint32Array){
+        if(!this.element) this.element = ElementBuffer.create(this.context);
+        this.element.setStatic(array, 0);
     }
 }
 
