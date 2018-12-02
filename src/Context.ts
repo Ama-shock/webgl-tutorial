@@ -1,7 +1,5 @@
 
-import {Shader} from './Shader';
 import {Program} from './Program';
-import {Buffer, ElementBuffer} from './Buffer';
 
 declare class ContextBase extends WebGLRenderingContext{}
 Object.defineProperty(self, 'ContextBase', {value: Object});
@@ -9,22 +7,30 @@ Object.defineProperty(self, 'ContextBase', {value: Object});
 export abstract class Context extends ContextBase{
     static create(canvas?: HTMLCanvasElement): Context{
         let c = canvas instanceof HTMLCanvasElement ? canvas : document.createElement('canvas');
-        let ctx = c.getContext("webgl") || c.getContext('experimental-webgl');
+        let ctx = c.getContext("webgl") || c.getContext('experimental-webgl') as any;
         if(!ctx) throw new Error('Not Supported WebGL.');
-        return ctx as Context;
+        ctx.programs = [];
+        return ctx;
+    }
+    readonly programs!: Program[];
+
+    reflesh(){
+        this.clearColor(0.0, 0.0, 0.0, 1.0);
+        this.enable(this.DEPTH_TEST);
+        this.depthFunc(this.LEQUAL);
+        this.clear(this.COLOR_BUFFER_BIT | this.DEPTH_BUFFER_BIT);
     }
 
-    private _buffer?: Buffer;
-    private _elementBuffer?: ElementBuffer;
-    get buffer(){
-        if(!this._buffer) this._buffer = Buffer.create(this);
-        return this._buffer;
+    draw(){
+        this.viewport(0, 0, this.canvas.width, this.canvas.height);
+        this.reflesh();
+        this.programs.forEach(program=>program.draw());
     }
     
-    private _program?: Program;
-    get program(){
-        if(!this._program) this._program = Program.create(this);
-        return this._program;
+    addProgram(){
+        let program = Program.create(this);
+        this.programs.push(program);
+        return program;
     }
 }
 Object.setPrototypeOf(WebGLRenderingContext.prototype, Context.prototype);

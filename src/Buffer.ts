@@ -5,12 +5,16 @@ enum BufferType {
     'elementArray' = ctx.ELEMENT_ARRAY_BUFFER,
 }
 
+enum DataType {
+    'float' = ctx.FLOAT,
+}
+
 enum BufferParameter {
     'size' = ctx.BUFFER_SIZE,
     'usage' = ctx.BUFFER_USAGE,
 }
 
-enum BufferDrawing {
+enum BufferUsage {
     'static' = ctx.STATIC_DRAW,
     'dynamic' = ctx.DYNAMIC_DRAW,
     'stream' = ctx.STREAM_DRAW,
@@ -24,28 +28,39 @@ abstract class BufferBase implements WebGLBuffer {
         return buffer;
     }
     readonly context!: WebGLRenderingContext;
-    readonly type!: BufferType;
+    readonly bufferType!: BufferType;
     
     get size(): number {
-        return this.context.getBufferParameter(this.type, BufferParameter.size);
+        return this.context.getBufferParameter(this.bufferType, BufferParameter.size);
     }
     
-    get usage(): BufferDrawing {
-        return this.context.getBufferParameter(this.type, BufferParameter.usage);
+    get usage(): BufferUsage {
+        return this.context.getBufferParameter(this.bufferType, BufferParameter.usage);
     }
 
-    private draw(array: ArrayBuffer|ArrayBufferView, draw: BufferDrawing){
-        this.context.bindBuffer(this.type, this);
-        this.context.bufferData(this.type, array, draw);
+    bind(){
+        this.context.bindBuffer(this.bufferType, this);
     }
-    staticDraw(array: ArrayBuffer|ArrayBufferView){
-        this.draw(array, BufferDrawing.static);
+
+    private _dimension: number = 0;
+    private _dateType: DataType = 0;
+    get dimension(): number{return this._dimension || 0;}
+    get dataType(): DataType{return this._dateType || 0;}
+    private setData(usage: BufferUsage, array: ArrayBuffer|ArrayBufferView, dimension: number){
+        this.bind();
+        this.context.bufferData(this.bufferType, array, usage);
+        this._dimension = dimension;
+        this._dateType = DataType.float;
     }
-    dynamicDraw(array: ArrayBuffer|ArrayBufferView){
-        this.draw(array, BufferDrawing.dynamic);
+    
+    setStatic(array: ArrayBuffer|ArrayBufferView, dimension: number){
+        this.setData(BufferUsage.static, array, dimension);
     }
-    streamDraw(array: ArrayBuffer|ArrayBufferView){
-        this.draw(array, BufferDrawing.stream);
+    setDynamic(array: ArrayBuffer|ArrayBufferView, dimension: number){
+        this.setData(BufferUsage.dynamic, array, dimension);
+    }
+    setStream(array: ArrayBuffer|ArrayBufferView, dimension: number){
+        this.setData(BufferUsage.stream, array, dimension);
     }
 }
 Object.setPrototypeOf(WebGLBuffer.prototype, BufferBase.prototype);
@@ -53,7 +68,7 @@ Object.setPrototypeOf(WebGLBuffer.prototype, BufferBase.prototype);
 export abstract class Buffer extends BufferBase {
     static create(ctx: WebGLRenderingContext): Buffer{
         let buffer = super.create(ctx) as any;
-        buffer.type = BufferType.array;
+        buffer.bufferType = BufferType.array;
         return buffer;
     }
 }
@@ -61,7 +76,7 @@ export abstract class Buffer extends BufferBase {
 export abstract class ElementBuffer extends BufferBase {
     static create(ctx: WebGLRenderingContext): Buffer{
         let buffer = super.create(ctx) as any;
-        buffer.type = BufferType.elementArray;
+        buffer.bufferType = BufferType.elementArray;
         return buffer;
     }
 }

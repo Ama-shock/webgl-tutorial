@@ -1,36 +1,53 @@
 import {Context} from '../src/index';
+import {mat4} from 'gl-matrix';
 
-let gh = Context.create();
-start(gh);
+let gl = Context.create();
+Object.defineProperty(self, "GLDemo", {value: gl});
+
 onload = ()=>{
-    document.body.appendChild(gh.canvas);
+    gl.canvas.width = 640;
+    gl.canvas.height = 480;
+    document.body.appendChild(gl.canvas);
+    start();
 };
 
-async function start(gl: Context) {
-    await gl.program.loadShader("gl.frag");
-    await gl.program.loadShader("gl.vert");
-    gl.program.init();
+async function start() {
+    let vertex = await fetch("gl.vert").then(res=>res.text());
+    let fragment = await fetch("gl.frag").then(res=>res.text());
 
-    // draw
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-    gl.enable(gl.DEPTH_TEST);
-    gl.depthFunc(gl.LEQUAL);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    let program = gl.addProgram();
+    program.addVertexShader(vertex);
+    program.addFragmentShader(fragment);
     
-    let perspectiveMatrix = [1.8106601238250732, 0, 0, 0, 0, 2.4142136573791504, 0, 0, 0, 0, -1.0020020008087158, -1, 0, 0, -0.20020020008087158, 0];
-    let mvMatrix = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, -6, 1];
+    const pMat = mat4.create();
+    mat4.perspective(
+        pMat,
+        45 * Math.PI / 180,
+        gl.canvas.clientWidth / gl.canvas.clientHeight,
+        0.1,
+        100.0
+    );
+    
+    const mvMat = mat4.create();
+    mat4.translate(mvMat, mvMat, [0.0, 0.0, -6.0]);
+
+    program.setUniform('uPMatrix', new Float32Array(pMat));
+    program.setUniform('uMVMatrix', new Float32Array(mvMat));
     
     let vertices = [
-        1.0,  1.0,  0.0,
-        -1.0, 1.0,  0.0,
-        1.0,  -1.0, 0.0,
-        -1.0, -1.0, 0.0
+        1.0,  1.0,
+        -1.0, 1.0,
+        1.0,  -1.0,
+        -1.0, -1.0
     ];
-    gl.buffer.staticDraw(new Float32Array(vertices));
-    
-    let attribute = gl.program.getAttribute('aVertexPosition');
-    let pUniform = gl.program.getUniform('uPMatrix', new Float32Array(perspectiveMatrix));
-    let mvUniform = gl.program.getUniform('uMVMatrix', new Float32Array(mvMatrix));
-    
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    program.setAttribute('aVertexPosition', new Float32Array(vertices), 2);
+    var colors = [
+        1.0,  1.0,  1.0,  1.0,    // 白
+        1.0,  0.0,  0.0,  1.0,    // 赤
+        0.0,  1.0,  0.0,  1.0,    // 緑
+        0.0,  0.0,  1.0,  1.0     // 青
+    ];
+    program.setAttribute('aVertexColor', new Float32Array(colors), 4);
+
+    gl.draw();
 }
