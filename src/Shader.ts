@@ -1,13 +1,4 @@
-let ctx = WebGLRenderingContext.prototype;
-enum ShaderParameter {
-    'shaderType' = ctx.SHADER_TYPE,
-    'complete' = ctx.COMPILE_STATUS,
-    'delete' = ctx.DELETE_STATUS
-}
-enum ShaderType {
-    'fragment' = ctx.FRAGMENT_SHADER,
-    'vertex' = ctx.VERTEX_SHADER
-}
+import {ShaderType, ShaderParameter} from './Enums';
 
 abstract class Shader implements WebGLShader{
     static create(ctx: WebGLRenderingContext, src?: string, type?: ShaderType): Shader{

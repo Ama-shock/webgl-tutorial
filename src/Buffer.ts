@@ -1,14 +1,4 @@
-
-let ctx = WebGLRenderingContext.prototype;
-enum BufferType {
-    'array' = ctx.ARRAY_BUFFER,
-    'elementArray' = ctx.ELEMENT_ARRAY_BUFFER,
-}
-
-enum DataType {
-    'float' = ctx.FLOAT,
-    'int' = ctx.INT,
-}
+import {DataType, BufferType, BufferUsage, BufferParameter} from './Enums';
 
 const DataTypeTable:  {[className: string]: DataType} = {
     Uint8ClampedArray: DataType.int,
@@ -24,17 +14,6 @@ const DataTypeTable:  {[className: string]: DataType} = {
     ArrayBuffer: DataType.float,
     Array: DataType.float
 };
-
-enum BufferParameter {
-    'size' = ctx.BUFFER_SIZE,
-    'usage' = ctx.BUFFER_USAGE,
-}
-
-enum BufferUsage {
-    'static' = ctx.STATIC_DRAW,
-    'dynamic' = ctx.DYNAMIC_DRAW,
-    'stream' = ctx.STREAM_DRAW,
-}
 
 abstract class BufferBase implements WebGLBuffer {
     static create(ctx: WebGLRenderingContext): BufferBase{

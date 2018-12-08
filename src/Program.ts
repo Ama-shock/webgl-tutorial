@@ -1,15 +1,7 @@
+import {ProgramParameter} from './Enums';
 import {VertexShader, FragmentShader} from './Shader';
 import {Buffer, ElementBuffer} from './Buffer';
-
-let ctx = WebGLRenderingContext.prototype;
-enum ProgramParameter {
-    'deleteStatus' = ctx.DELETE_STATUS,
-    'linkStatus' = ctx.LINK_STATUS,
-    'validateStatus' = ctx.VALIDATE_STATUS,
-    'attachedShaders' = ctx.ATTACHED_SHADERS,
-    'activeAttributes' = ctx.ACTIVE_ATTRIBUTES,
-    'activeUniform' = ctx.ACTIVE_UNIFORMS,
-}
+import {Texture} from './Texture';
 
 export abstract class Program implements WebGLProgram {
     static create(ctx: WebGLRenderingContext, vertexCount: number): Program{
@@ -19,6 +11,7 @@ export abstract class Program implements WebGLProgram {
         program.shaders = [];
         program.attributes = [];
         program.uniforms = [];
+        program.textures = [];
         program.vertexCount = vertexCount;
         return program;
     }
@@ -26,6 +19,7 @@ export abstract class Program implements WebGLProgram {
     readonly shaders!: (VertexShader|FragmentShader)[];
     readonly attributes!: Attribute[];
     readonly uniforms!: Uniform[];
+    readonly textures!: Texture[];
     readonly vertexCount!: number;
 
     get deleted(): boolean {
@@ -53,7 +47,9 @@ export abstract class Program implements WebGLProgram {
         if (!this.linked) throw new Error("Shader Program cannot be Linked.");
     }
 
+    onDraw?: (program: Program)=>void;
     draw(){
+        this.onDraw && this.onDraw(this);
         for(let attribute of this.attributes) attribute.draw();
         this.context.useProgram(this);
         for(let uniform of this.uniforms) uniform.draw();
@@ -90,7 +86,7 @@ export abstract class Program implements WebGLProgram {
         attr.buffer.setStatic(array, dimension);
     }
 
-    setUniform(name: string, value: number|Float32List) {
+    setUniform(name: string, value: number|Float32List|Texture) {
         if(!this.linked) this.link();
         let unif = this.uniforms.find(u=>u.name == name);
         if(!unif){
@@ -104,6 +100,13 @@ export abstract class Program implements WebGLProgram {
     setElement(array: Uint8Array|Uint16Array|Uint32Array){
         if(!this.element) this.element = ElementBuffer.create(this.context);
         this.element.setStatic(array, 0);
+    }
+
+    setTexture(image?: HTMLImageElement){
+        let texture = Texture.create(this.context);
+        this.textures.push(texture);
+        if(image) texture.load(image);
+        return texture;
     }
 }
 
@@ -132,66 +135,77 @@ export class Attribute {
 
 
 export class Uniform {
-    readonly context: WebGLRenderingContext;
+    readonly program: Program;
     readonly location: WebGLUniformLocation;
     constructor(
         program: Program,
         readonly name: string
     ){
-        this.context = program.context;
-        let location = this.context.getUniformLocation(program, name);
+        this.program = program;
+        let location = program.context.getUniformLocation(program, name);
         if(!location) throw new Error('Not found Uniform location. > '+ name);
         this.location = location;
     }
     
-    private _value?: number|Float32List;
+    private _value?: number|Float32List|Texture;
     private changed: boolean = false;
-    get value(): number|Float32List{return this._value || 0;}
-    set value(v: number|Float32List){
+    get value(): number|Float32List|Texture{return this._value || 0;}
+    set value(v: number|Float32List|Texture){
         this.changed = true;
         this._value = v;
     }
     
     draw(){
+        if(this.value instanceof WebGLTexture){
+            let txt = this.value as Texture;
+            if(this.changed || txt.changed){
+                let no = this.program.textures.indexOf(txt);
+                txt.bind(no);
+                this.program.context.uniform1f(this.location, 0);
+            }
+            this.changed = false;
+            return;
+        }
         if(!this.changed) return;
         this.changed = false;
-        this.sendData(this.value);
+        this.sendData(this.value as any);
     }
 
     private sendData(v: number|Float32List){
+        let ctx = this.program.context;
         if([Array, Float32Array, Float64Array].find(c=>v instanceof c)){
             let value = v as number[];
             switch(value.length){
                 case 1:
-                this.context.uniform1fv(this.location, value);
+                ctx.uniform1fv(this.location, value);
                 return;
 
                 case 2:
-                this.context.uniform2fv(this.location, value);
+                ctx.uniform2fv(this.location, value);
                 return;
                 
                 case 3:
-                this.context.uniform3fv(this.location, value);
+                ctx.uniform3fv(this.location, value);
                 return;
                 
                 case 4:
-                this.context.uniformMatrix2fv(this.location, false, value);
+                ctx.uniformMatrix2fv(this.location, false, value);
                 return;
                 
                 case 9:
-                this.context.uniformMatrix3fv(this.location, false, value);
+                ctx.uniformMatrix3fv(this.location, false, value);
                 return;
                 
                 case 16:
-                this.context.uniformMatrix4fv(this.location, false, value);
+                ctx.uniformMatrix4fv(this.location, false, value);
                 return;
                 
                 default:
-                this.context.uniform1fv(this.location, value);
+                ctx.uniform1fv(this.location, value);
                 return;
             }
         }
         
-        this.context.uniform1f(this.location, v as number);
+        ctx.uniform1f(this.location, v as number);
     }
 }
