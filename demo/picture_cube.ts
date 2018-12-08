@@ -26,37 +26,38 @@ export default async function pictureCube(gl: Context) {
     mat4.translate(mvMat, mvMat, [0.0, 0.0, -6.0]);
     program.setUniform('uMVMatrix', mvMat);
     
+    const nMat = mat4.create();
+    mat4.invert(nMat, mvMat);
+    mat4.transpose(nMat, nMat);
+    program.setUniform('uNMatrix', nMat);
+
+    
     let vertices = [
         // 前面
         -1.0, -1.0,  1.0,
          1.0, -1.0,  1.0,
          1.0,  1.0,  1.0,
         -1.0,  1.0,  1.0,
-        
         // 背面
         -1.0, -1.0, -1.0,
         -1.0,  1.0, -1.0,
          1.0,  1.0, -1.0,
          1.0, -1.0, -1.0,
-        
         // 上面
         -1.0,  1.0, -1.0,
         -1.0,  1.0,  1.0,
          1.0,  1.0,  1.0,
          1.0,  1.0, -1.0,
-        
         // 底面
         -1.0, -1.0, -1.0,
          1.0, -1.0, -1.0,
          1.0, -1.0,  1.0,
         -1.0, -1.0,  1.0,
-        
         // 右側面
          1.0, -1.0, -1.0,
          1.0,  1.0, -1.0,
          1.0,  1.0,  1.0,
          1.0, -1.0,  1.0,
-        
         // 左側面
         -1.0, -1.0, -1.0,
         -1.0, -1.0,  1.0,
@@ -65,6 +66,40 @@ export default async function pictureCube(gl: Context) {
     ];
     program.setAttribute('aVertexPosition', new Float32Array(vertices), 3);
     
+    const vertexNormals = [
+        // Front
+         0.0,  0.0,  1.0,
+         0.0,  0.0,  1.0,
+         0.0,  0.0,  1.0,
+         0.0,  0.0,  1.0,
+        // Back
+         0.0,  0.0, -1.0,
+         0.0,  0.0, -1.0,
+         0.0,  0.0, -1.0,
+         0.0,  0.0, -1.0,
+        // Top
+         0.0,  1.0,  0.0,
+         0.0,  1.0,  0.0,
+         0.0,  1.0,  0.0,
+         0.0,  1.0,  0.0,
+        // Bottom
+         0.0, -1.0,  0.0,
+         0.0, -1.0,  0.0,
+         0.0, -1.0,  0.0,
+         0.0, -1.0,  0.0,
+        // Right
+         1.0,  0.0,  0.0,
+         1.0,  0.0,  0.0,
+         1.0,  0.0,  0.0,
+         1.0,  0.0,  0.0,
+        // Left
+        -1.0,  0.0,  0.0,
+        -1.0,  0.0,  0.0,
+        -1.0,  0.0,  0.0,
+        -1.0,  0.0,  0.0
+    ];
+    program.setAttribute('aVertexNormal', new Float32Array(vertexNormals), 3);
+
     let textureCoordinates = [
         // 前面
         0.0,  0.0,
