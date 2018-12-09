@@ -4,7 +4,7 @@ import {Buffer, ElementBuffer} from './Buffer';
 import {Texture} from './Texture';
 
 export abstract class Program implements WebGLProgram {
-    static create(ctx: WebGLRenderingContext, vertexCount: number): Program{
+    static create(ctx: WebGLRenderingContext, index: number|Uint8Array|Uint16Array|Uint32Array): Program{
         let program = ctx.createProgram() as any;
         if(!program) throw new Error("Error Occured in Creating Program.");
         program.context = ctx;
@@ -12,7 +12,13 @@ export abstract class Program implements WebGLProgram {
         program.attributes = [];
         program.uniforms = [];
         program.textures = [];
-        program.vertexCount = vertexCount;
+        if(typeof index == 'number'){
+            program.indexLength = index;
+        }else{
+            program.indexLength = index.length;
+            program.indexBuffer = ElementBuffer.create(ctx);
+            program.indexBuffer.setStatic(index, 0);
+        }
         return program;
     }
     readonly context!: WebGLRenderingContext;
@@ -20,7 +26,8 @@ export abstract class Program implements WebGLProgram {
     readonly attributes!: Attribute[];
     readonly uniforms!: Uniform[];
     readonly textures!: Texture[];
-    readonly vertexCount!: number;
+    private indexLength!: number;
+    private indexBuffer?: ElementBuffer;
 
     get deleted(): boolean {
         return this.context.getProgramParameter(this, ProgramParameter.deleteStatus);
@@ -53,17 +60,18 @@ export abstract class Program implements WebGLProgram {
         for(let attribute of this.attributes) attribute.draw();
         this.context.useProgram(this);
         for(let uniform of this.uniforms) uniform.draw();
-        
-        if(this.element){
-            this.context.drawElements(
-                this.context.TRIANGLES,
-                this.vertexCount,
-                this.context.UNSIGNED_SHORT,
-                0
-            );
-        }else{
-            this.context.drawArrays(this.context.TRIANGLE_STRIP, 0, this.vertexCount);
+
+        if(!this.indexBuffer){
+            this.context.drawArrays(this.context.TRIANGLE_STRIP, 0, this.indexLength);
+            return;
         }
+
+        this.context.drawElements(
+            this.context.TRIANGLES,
+            this.indexLength,
+            this.context.UNSIGNED_SHORT,
+            0
+        );
     }
     
     addVertexShader(src: string){
@@ -94,12 +102,6 @@ export abstract class Program implements WebGLProgram {
             this.uniforms.push(unif);
         }
         unif.value = value;
-    }
-
-    private element?: ElementBuffer;
-    setElement(array: Uint8Array|Uint16Array|Uint32Array){
-        if(!this.element) this.element = ElementBuffer.create(this.context);
-        this.element.setStatic(array, 0);
     }
 
     setTexture(image?: HTMLImageElement){

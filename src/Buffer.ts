@@ -41,8 +41,6 @@ abstract class BufferBase implements WebGLBuffer {
 
     private _dimension: number = 0;
     private _dataType: DataType = 0;
-    private _length: number = 0;
-    get length(){return this._length;}
 
     get dimension(): number{return this._dimension || 0;}
     get dataType(): DataType{return this._dataType || 0;}
@@ -56,7 +54,6 @@ abstract class BufferBase implements WebGLBuffer {
         this.context.bufferData(this.bufferType, array, usage);
         this._dimension = dimension;
         this._dataType = DataTypeTable[(dataType || array.constructor).name];
-        this._length = array.byteLength;
     }
     
     setStatic(array: ArrayBuffer|ArrayBufferView, dimension: number){

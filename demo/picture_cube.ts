@@ -8,7 +8,15 @@ export default async function pictureCube(gl: Context) {
     image.src = 'image.jpg';
     await new Promise(r=>image.onload = r);
 
-    let program = gl.addProgram(36);
+    const indices = [
+        0,  1,  2,      0,  2,  3,    // front
+        4,  5,  6,      4,  6,  7,    // back
+        8,  9,  10,     8,  10, 11,   // top
+        12, 13, 14,     12, 14, 15,   // bottom
+        16, 17, 18,     16, 18, 19,   // right
+        20, 21, 22,     20, 22, 23,   // left
+    ];
+    let program = gl.addProgram(new Uint16Array(indices));
     program.addVertexShader(vertex);
     program.addFragmentShader(fragment);
     
@@ -136,16 +144,6 @@ export default async function pictureCube(gl: Context) {
 
     let texture = program.setTexture(image);
     program.setUniform('uSampler', texture);
-
-    const indices = [
-        0,  1,  2,      0,  2,  3,    // front
-        4,  5,  6,      4,  6,  7,    // back
-        8,  9,  10,     8,  10, 11,   // top
-        12, 13, 14,     12, 14, 15,   // bottom
-        16, 17, 18,     16, 18, 19,   // right
-        20, 21, 22,     20, 22, 23,   // left
-    ];
-    program.setElement(new Uint16Array(indices));
 
     program.onDraw = ()=>{
         program.setUniform('time', Date.now() % 3000 / 3000);

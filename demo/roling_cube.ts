@@ -5,7 +5,15 @@ export default async function rolingCube(gl: Context) {
     let vertex = await fetch("roling_cube.vert").then(res=>res.text());
     let fragment = await fetch("simple_color.frag").then(res=>res.text());
 
-    let program = gl.addProgram(36);
+    const indixes = [
+        0,  1,  2,      0,  2,  3,    // front
+        4,  5,  6,      4,  6,  7,    // back
+        8,  9,  10,     8,  10, 11,   // top
+        12, 13, 14,     12, 14, 15,   // bottom
+        16, 17, 18,     16, 18, 19,   // right
+        20, 21, 22,     20, 22, 23,   // left
+    ];
+    let program = gl.addProgram(new Uint16Array(indixes));
     program.addVertexShader(vertex);
     program.addFragmentShader(fragment);
     
@@ -29,31 +37,26 @@ export default async function rolingCube(gl: Context) {
          1.0, -1.0,  1.0,
          1.0,  1.0,  1.0,
         -1.0,  1.0,  1.0,
-        
         // 背面
         -1.0, -1.0, -1.0,
         -1.0,  1.0, -1.0,
          1.0,  1.0, -1.0,
          1.0, -1.0, -1.0,
-        
         // 上面
         -1.0,  1.0, -1.0,
         -1.0,  1.0,  1.0,
          1.0,  1.0,  1.0,
          1.0,  1.0, -1.0,
-        
         // 底面
         -1.0, -1.0, -1.0,
          1.0, -1.0, -1.0,
          1.0, -1.0,  1.0,
         -1.0, -1.0,  1.0,
-        
         // 右側面
          1.0, -1.0, -1.0,
          1.0,  1.0, -1.0,
          1.0,  1.0,  1.0,
          1.0, -1.0,  1.0,
-        
         // 左側面
         -1.0, -1.0, -1.0,
         -1.0, -1.0,  1.0,
@@ -75,16 +78,6 @@ export default async function rolingCube(gl: Context) {
         colors = colors.concat(c, c, c, c);
     }
     program.setAttribute('aVertexColor', new Float32Array(colors), 4);
-
-    const indices = [
-        0,  1,  2,      0,  2,  3,    // front
-        4,  5,  6,      4,  6,  7,    // back
-        8,  9,  10,     8,  10, 11,   // top
-        12, 13, 14,     12, 14, 15,   // bottom
-        16, 17, 18,     16, 18, 19,   // right
-        20, 21, 22,     20, 22, 23,   // left
-    ];
-    program.setElement(new Uint16Array(indices));
 
     program.onDraw = ()=>{
         program.setUniform('time', Date.now() % 3000 / 3000);

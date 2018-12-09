@@ -27,10 +27,16 @@ export abstract class Context extends ContextBase{
         this.programs.forEach(program=>program.draw());
     }
     
-    addProgram(vertexCount: number){
-        let program = Program.create(this, vertexCount);
+    addProgram(index: number|Uint8Array|Uint16Array|Uint32Array){
+        let program = Program.create(this, index);
         this.programs.push(program);
         return program;
+    }
+    removeProgram(program: Program){
+        let index = this.programs.indexOf(program);
+        if(index < 0) return false;
+        this.programs.splice(index, 1);
+        return true;
     }
 }
 Object.setPrototypeOf(WebGLRenderingContext.prototype, Context.prototype);
