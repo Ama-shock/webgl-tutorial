@@ -1,7 +1,7 @@
-import {ProgramParameter} from './Enums';
+import {ProgramParameter, TextureType} from './Enums';
 import {VertexShader, FragmentShader} from './Shader';
 import {Buffer, ElementBuffer} from './Buffer';
-import {Texture} from './Texture';
+import {Texture, TextureParam} from './Texture';
 
 export abstract class Program implements WebGLProgram {
     static create(ctx: WebGLRenderingContext, index: number|Uint8Array|Uint16Array|Uint32Array): Program{
@@ -104,10 +104,9 @@ export abstract class Program implements WebGLProgram {
         unif.value = value;
     }
 
-    setTexture(image?: HTMLImageElement){
-        let texture = Texture.create(this.context);
+    setTexture(){
+        let texture = Texture.create(this.context, this.textures.length, TextureType.plane);
         this.textures.push(texture);
-        if(image) texture.load(image);
         return texture;
     }
 }
@@ -137,14 +136,14 @@ export class Attribute {
 
 
 export class Uniform {
-    readonly program: Program;
+    readonly context: WebGLRenderingContext;
     readonly location: WebGLUniformLocation;
     constructor(
         program: Program,
         readonly name: string
     ){
-        this.program = program;
-        let location = program.context.getUniformLocation(program, name);
+        this.context = program.context;
+        let location = this.context.getUniformLocation(program, name);
         if(!location) throw new Error('Not found Uniform location. > '+ name);
         this.location = location;
     }
@@ -159,12 +158,7 @@ export class Uniform {
     
     draw(){
         if(this.value instanceof WebGLTexture){
-            let txt = this.value as Texture;
-            if(this.changed || txt.changed){
-                let no = this.program.textures.indexOf(txt);
-                txt.bind(no);
-                this.program.context.uniform1f(this.location, 0);
-            }
+            (this.value as Texture).draw();
             this.changed = false;
             return;
         }
@@ -174,7 +168,7 @@ export class Uniform {
     }
 
     private sendData(v: number|Float32List){
-        let ctx = this.program.context;
+        let ctx = this.context;
         if([Array, Float32Array, Float64Array].find(c=>v instanceof c)){
             let value = v as number[];
             switch(value.length){

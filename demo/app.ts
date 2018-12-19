@@ -2,11 +2,13 @@ import {Context, Program} from '../src/index';
 import rotateSquare from './rotate_square';
 import rolingCube from './roling_cube';
 import pictureCube from './picture_cube';
+import videoCube from './video_cube';
 
 const functions = [
     rotateSquare,
     rolingCube,
-    pictureCube
+    pictureCube,
+    videoCube
 ];
 
 onload = async ()=>{

@@ -1,5 +1,6 @@
 import {mat4} from 'gl-matrix';
 import {Context} from '../src/index';
+import { TextureFilter, TextureMipmap } from '../src/Enums';
 
 export default async function pictureCube(gl: Context) {
     let vertex = await fetch("picture_cube.vert").then(res=>res.text());
@@ -142,7 +143,9 @@ export default async function pictureCube(gl: Context) {
     ];
     program.setAttribute('aTextureCoord', new Float32Array(textureCoordinates), 2);
 
-    let texture = program.setTexture(image);
+    let texture = program.setTexture();
+    texture.setPlane(image);
+    texture.filters = [TextureFilter.linear, TextureFilter.linear];
     program.setUniform('uSampler', texture);
 
     program.onDraw = ()=>{
